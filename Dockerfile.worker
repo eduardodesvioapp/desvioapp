@@ -1,0 +1,11 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Comando para iniciar o worker
+CMD ["node", "scratch/ai_chat_worker.cjs"]

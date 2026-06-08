@@ -1,0 +1,229 @@
+📘 🚀 DOCUMENTAÇÃO TÉCNICA
+App de Encontros Inteligente (IA + Supabase)
+   0. Nome: "Desvio"
+      Slogan: "Às vezes, sair do caminho é o melhor caminho."
+🧠 1. VISÃO GERAL
+🎯 Objetivo
+
+Desenvolver uma plataforma de encontros para adultos (18+) com:
+
+Feed inteligente (ranking dinâmico)
+Chat em tempo real
+IA integrada (sugestões + recomendação)
+Sistema de compatibilidade
+Monetização (assinatura + boost)
+Crescimento orgânico (referrals + gatilhos)
+🧩 Diferencial
+
+O sistema não é baseado apenas em filtros, mas em:
+
+comportamento do usuário
+similaridade semântica (embeddings)
+aprendizado contínuo
+🏗️ 2. ARQUITETURA
+🔧 Stack
+Frontend
+React (Vite ou Next.js)
+TailwindCSS
+Zustand / React Query
+Backend
+Supabase:
+Auth
+Postgres
+Realtime
+Storage
+Edge Functions
+IA
+OpenAI (chat + embeddings)
+Push
+Firebase Cloud Messaging ou Expo
+Pagamentos
+Stripe
+🔄 Fluxo macro
+Usuário cria conta
+Perfil é criado automaticamente
+Feed retorna perfis ranqueados
+Usuário interage (like/skip)
+Sistema aprende comportamento
+Match → chat em tempo real
+IA sugere mensagens
+Push notifica eventos
+Monetização é ativada por gatilhos
+🗄️ 3. MODELAGEM DE DADOS
+📌 Tabelas principais
+Tabela	Função
+profiles	dados do usuário
+interests	interesses possíveis
+user_interests	relação usuário ↔ interesses
+likes	curtidas
+matches	conexões
+messages	chat
+interactions	comportamento
+user_settings	preferências
+subscriptions	pagamentos
+boosts	destaque
+events	analytics
+user_stats	métricas
+🔗 Relacionamentos
+profiles.id → auth.users.id
+user_interests → profiles
+messages → matches
+matches → users
+interactions → users
+🔐 4. SEGURANÇA (RLS)
+🎯 Princípios
+Usuário só acessa seus dados
+Chat só entre matches
+Nada crítico depende do frontend
+📌 Exemplos
+Mensagens
+só pode ler se pertence ao match
+só pode enviar se for participante
+Settings
+apenas o próprio usuário
+⚡ 5. FEED INTELIGENTE
+🎯 Função principal
+get_feed(current_user uuid)
+🧠 Cálculo de score
+score =
+  interação (likes, mensagens)
+  + interesses em comum
+  + similaridade (embedding)
+  + boost
+  + atividade recente
+  + aleatoriedade leve
+🎯 Resultado
+feed personalizado
+melhora conforme uso
+🤖 6. IA
+🧠 6.1 Sugestão de mensagens
+Entrada:
+última mensagem
+perfil dos usuários
+Saída:
+3 respostas naturais
+🧠 6.2 Embeddings
+Dados usados:
+bio
+interesses
+Uso:
+busca por similaridade
+ranking avançado
+🧠 6.3 Comportamento
+
+Tabela: interactions
+
+ação	peso
+like	+3
+match	+5
+mensagem	+10
+skip	-2
+💬 7. CHAT
+⚡ Tecnologia
+Supabase Realtime (WebSocket)
+📌 Funcionalidades
+mensagens em tempo real
+histórico persistente
+notificações push
+🔐 Segurança
+RLS garante isolamento
+acesso apenas ao match
+🔔 8. NOTIFICAÇÕES
+📱 Tipos
+nova mensagem
+novo match
+likes recebidos
+🧠 Regras
+respeitar:
+DND (não perturbe)
+preferências do usuário
+⚙️ 9. CONFIGURAÇÕES
+🎛️ Opções
+notificações
+tema (dark/light)
+modo invisível
+modo viagem
+distância máxima
+🎯 10. COMPATIBILIDADE
+🧠 Fórmula
+compatibilidade =
+  interesses
+  + embeddings
+  + comportamento
+  + proximidade
+🎯 Output
+percentual (0–100%)
+exibido no perfil
+💰 11. MONETIZAÇÃO
+💳 Sistema
+
+Integração com Stripe
+
+📦 Produtos
+Premium
+ver quem curtiu
+modo invisível
+likes ilimitados
+Boost
+destaque no feed
+🎯 Estratégia
+paywall dinâmico
+gatilhos comportamentais
+📊 12. ANALYTICS
+📈 Métricas
+DAU
+mensagens/dia
+matches
+receita
+🧱 Fonte
+
+Tabela: events
+
+📊 Visualização
+gráficos (Recharts)
+dashboard admin
+🔥 13. GROWTH
+🚀 Estratégias
+convite com recompensa
+deep links
+notificações inteligentes
+escassez
+⚙️ 14. AUTOMAÇÕES
+🔁 Triggers
+criar match automaticamente
+criar settings ao registrar usuário
+⚡ Jobs
+expirar boost
+limpar tokens inválidos
+🚀 15. ESCALABILIDADE
+📈 Preparado para:
+milhares de usuários simultâneos
+chat em tempo real
+IA integrada
+🔧 Possíveis upgrades
+PostGIS (localização real)
+Redis (cache feed)
+fila de eventos (Kafka / queues)
+⚠️ 16. RISCOS E CUIDADOS
+não confiar no frontend
+evitar spam de notificações
+moderar conteúdo
+proteger dados sensíveis
+📌 17. ENTREGÁVEIS
+
+O sistema deve fornecer:
+
+backend completo (Supabase)
+frontend funcional
+IA integrada
+notificações
+monetização
+🧾 RESUMO FINAL
+
+Você está construindo:
+
+📱 um app estilo Tinder
+🧠 com inteligência estilo TikTok
+🤖 com IA no chat
+💰 com monetização real
+📊 com visão analítica

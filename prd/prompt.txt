@@ -1,0 +1,178 @@
+PROMPT COMPLETO — APP DE ENCONTROS INTELIGENTE
+
+Crie um aplicativo web/mobile moderno, escalável e seguro para conexões entre adultos (18+), com foco em encontros, interações sociais e experiências personalizadas.
+
+Nome: "Desvio"
+      Slogan: "Às vezes, sair do caminho é o melhor caminho."
+      
+O app deve ter funcionalidades semelhantes a Tinder, porém com diferenciais baseados em IA, personalização comportamental e monetização avançada.
+
+🎯 OBJETIVO DO PRODUTO
+
+Desenvolver uma plataforma que permita:
+
+Descobrir pessoas com base em interesses e comportamento
+Realizar matches e conversar em tempo real
+Utilizar IA para melhorar interações
+Monetizar com assinatura e recursos premium
+🧩 FUNCIONALIDADES PRINCIPAIS
+👤 1. Usuários e Perfis
+Cadastro com email/senha e OAuth
+Verificação de idade (18+ obrigatório)
+Perfil com:
+fotos
+bio
+interesses (namoro, casual, amizade, etc.)
+localização (GPS)
+Múltiplos interesses obrigatórios
+📱 2. Feed com Swipe Inteligente
+Interface estilo swipe (like / skip)
+Ranking dinâmico baseado em:
+interesses em comum
+interações do usuário
+similaridade (embeddings)
+atividade recente
+boost ativo
+Pequena aleatoriedade para exploração
+💬 3. Chat em Tempo Real
+Chat com Supabase Realtime
+Envio de texto e imagens
+Notificações push
+🤖 4. IA no Chat
+Sugestões automáticas de mensagens:
+no início do match
+durante a conversa
+Baseadas em:
+perfil dos usuários
+contexto da conversa
+Máximo de 3 sugestões por vez
+🎯 5. Compatibilidade (% Match)
+Exibir percentual de compatibilidade
+Baseado em:
+interesses
+embeddings
+comportamento
+proximidade
+🧠 6. Algoritmo Inteligente (Estilo TikTok)
+Sistema de aprendizado baseado em:
+likes
+skips
+mensagens
+Ranking evolui conforme uso
+Armazenar interações com pesos
+🧠 7. Embeddings (RAG com Supabase)
+Gerar embeddings dos perfis
+Usar pgvector para similaridade
+Combinar com ranking principal
+🔔 8. Notificações Push
+Integração com Firebase Cloud Messaging ou Expo
+Enviar:
+nova mensagem
+novo match
+likes recebidos
+Respeitar configurações do usuário (DND, etc.)
+⚙️ 9. Configurações do Usuário
+Notificações (on/off)
+Dark mode 🌙
+Não perturbe 🔕 (horário configurável)
+Modo viagem 📍
+Modo invisível 🔥 (premium)
+💰 10. Monetização
+
+Integração com Stripe
+
+Planos:
+Premium:
+ver quem curtiu
+likes ilimitados
+modo invisível
+Boost:
+destaque por tempo limitado
+🔥 11. Growth e Viralização
+Sistema de convite com recompensa
+Deep links de indicação
+Gatilhos:
+“alguém curtiu você”
+“alta compatibilidade”
+Limitação estratégica para conversão
+📊 12. Dashboard Admin
+Métricas:
+usuários ativos (DAU)
+mensagens/dia
+matches/dia
+receita
+Gráficos com Recharts
+Lista de usuários ativos
+🧱 STACK TECNOLÓGICA
+
+Frontend:
+
+React (Vite ou Next.js)
+TailwindCSS
+Zustand ou React Query
+
+Backend:
+
+Supabase:
+Auth
+Postgres
+Realtime
+Storage
+Edge Functions
+
+IA:
+
+OpenAI (chat + embeddings)
+
+Push:
+
+Expo Notifications ou FCM
+
+Pagamentos:
+
+Stripe
+🗄️ MODELAGEM (RESUMO)
+
+Tabelas principais:
+
+profiles
+user_interests
+likes
+matches
+messages
+interactions
+user_settings
+subscriptions
+boosts
+events
+🔐 SEGURANÇA
+RLS em todas as tabelas sensíveis
+Usuário só acessa seus dados
+Chat restrito a matches
+Validação de premium no backend
+🎨 UI/UX
+Mobile-first
+Dark mode padrão
+Swipe fluido
+Chat estilo moderno
+Feedback visual (match, likes, etc.)
+🚀 DIFERENCIAIS
+IA integrada no chat
+Feed inteligente (não linear)
+Compatibilidade real
+Sistema de aprendizado contínuo
+Monetização estratégica
+⚠️ REGRAS IMPORTANTES
+Apenas usuários maiores de 18 anos
+Conteúdo deve ser moderado
+Privacidade é prioridade
+Evitar spam e abuso
+📌 ENTREGA ESPERADA
+
+O sistema deve gerar:
+
+Código frontend funcional
+Backend integrado ao Supabase
+Estrutura de banco pronta
+Componentes reutilizáveis
+Base escalável para produção

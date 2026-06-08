@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://services-supa-desvio.2unk5k.easypanel.host/mcp?read_only=true",
+      "headers": {}
+    }
+  }
+}

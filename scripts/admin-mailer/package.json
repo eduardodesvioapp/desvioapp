@@ -1,0 +1,15 @@
+{
+  "name": "admin-mailer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Worker que consome public.email_outbox e envia Gmail SMTP aos admins.",
+  "scripts": {
+    "start": "node worker.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
+    "dotenv": "^17.4.2",
+    "nodemailer": "^6.9.16"
+  }
+}

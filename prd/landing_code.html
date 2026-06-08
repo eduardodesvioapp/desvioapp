@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Desvio | The Velvet Deviation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0e0e0e;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2, h3, .brand-font {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .deviation-gradient {
+            background: linear-gradient(135deg, #ba9eff 0%, #8455ef 100%);
+        }
+        .glass-panel {
+            background: rgba(38, 38, 38, 0.7);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#ae8dff",
+                        "on-surface-variant": "#adaaaa",
+                        "on-error": "#490013",
+                        "on-secondary": "#420d00",
+                        "tertiary-fixed": "#00f4fe",
+                        "secondary": "#ff7346",
+                        "primary-fixed-dim": "#a27cff",
+                        "primary": "#ba9eff",
+                        "on-secondary-container": "#fff6f3",
+                        "on-tertiary-fixed": "#004346",
+                        "error-dim": "#d73357",
+                        "secondary-fixed-dim": "#ffb199",
+                        "on-primary-fixed-variant": "#370086",
+                        "surface-container-high": "#201f1f",
+                        "on-primary-container": "#2b006e",
+                        "tertiary": "#a1faff",
+                        "surface-container-lowest": "#000000",
+                        "on-secondary-fixed": "#651900",
+                        "primary-dim": "#8455ef",
+                        "on-tertiary-container": "#00575b",
+                        "surface": "#0e0e0e",
+                        "on-tertiary-fixed-variant": "#006266",
+                        "surface-dim": "#0e0e0e",
+                        "background": "#0e0e0e",
+                        "inverse-surface": "#fcf8f8",
+                        "on-error-container": "#ffb2b9",
+                        "on-surface": "#ffffff",
+                        "primary-fixed": "#ae8dff",
+                        "surface-bright": "#2c2c2c",
+                        "on-primary-fixed": "#000000",
+                        "surface-container": "#1a1919",
+                        "tertiary-container": "#00f4fe",
+                        "outline": "#777575",
+                        "surface-container-low": "#131313",
+                        "secondary-fixed": "#ffc4b3",
+                        "outline-variant": "#494847",
+                        "on-secondary-fixed-variant": "#962a00",
+                        "error-container": "#a70138",
+                        "secondary-dim": "#ff7346",
+                        "inverse-primary": "#6e3bd7",
+                        "on-primary": "#39008c",
+                        "tertiary-fixed-dim": "#00e5ee",
+                        "inverse-on-surface": "#565554",
+                        "tertiary-dim": "#00e5ee",
+                        "on-background": "#ffffff",
+                        "error": "#ff6e84",
+                        "secondary-container": "#ae3200",
+                        "surface-tint": "#ba9eff",
+                        "surface-variant": "#262626",
+                        "surface-container-highest": "#262626",
+                        "on-tertiary": "#006165"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background selection:bg-primary selection:text-on-primary overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 no-border shadow-none bg-gradient-to-b from-[#0e0e0e] to-transparent">
+<nav class="flex justify-between items-center px-6 py-4 w-full">
+<div class="text-2xl font-black tracking-tighter text-[#ba9eff] font-['Plus_Jakarta_Sans']">Desvio</div>
+<div class="hidden md:flex items-center gap-8 font-['Plus_Jakarta_Sans'] font-bold tracking-tighter">
+<a class="text-[#ba9eff] hover:text-white transition-colors" href="#">Explore</a>
+<a class="text-[#adaaaa] hover:text-white transition-colors" href="#">Features</a>
+<a class="text-[#adaaaa] hover:text-white transition-colors" href="#">Safety</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2 rounded-full font-semibold text-sm text-on-surface-variant hover:text-white transition-all scale-95 duration-200 ease-in-out">Login</button>
+<button class="px-6 py-2 rounded-full deviation-gradient text-on-primary font-bold text-sm transition-all active:scale-95">Join Now</button>
+<span class="material-symbols-outlined text-[#ba9eff] cursor-pointer" data-icon="settings">settings</span>
+</div>
+</nav>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img alt="Hero atmospheric image" class="w-full h-full object-cover opacity-40 mix-blend-luminosity scale-105" data-alt="Cinematic wide shot of a luxury private lounge at night, deep purple neon accents, soft shadows, sophisticated atmosphere with moody lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdiCU3ISPmIIMzkFBBdH7Icq-vO82OJb-xF-GNo0omMIcdVyoT_omBbnLYSj_p3XVLpkkCAUfJjW_ZiMtuZJYmycbtQ_5kl6pvKq2iCLimGFMmNEDfY2uZONPnbU7Ghs3Bbt-O1akkiASpHYo8kOzu7Q2QDnccmWkWsMCTRS-mOt9277qli6Une223Tc7b2xGWe7O4FOYD3X_7gVKOmo3X_33YaghjDoopkrYplXLla4y5whiIZWafVmxB0jfk_UR-1Tukxdc34PbO"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/40 to-transparent"></div>
+</div>
+<div class="relative z-10 max-w-5xl w-full text-center space-y-8">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-outline-variant/20 glass-panel mb-4">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-label tracking-[0.2em] uppercase text-on-surface-variant">The Velvet Deviation</span>
+</div>
+<h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] text-white">
+                    Às vezes, sair do caminho é o <span class="text-primary italic">melhor</span> caminho.
+                </h1>
+<p class="max-w-xl mx-auto text-on-surface-variant text-lg leading-relaxed font-body">
+                    Descubra conexões que desafiam a rotina. Um espaço privado para quem busca a elegância do inesperado e a segurança do anonimato sofisticado.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+<button class="w-full sm:w-auto px-10 py-4 rounded-full deviation-gradient text-on-primary font-bold text-lg shadow-[0_20px_40px_rgba(186,158,255,0.2)] hover:scale-105 transition-transform duration-300">
+                        Começar jornada
+                    </button>
+<button class="w-full sm:w-auto px-10 py-4 rounded-full border border-outline-variant/30 text-white font-semibold hover:bg-white/5 transition-colors">
+                        Explorar segredos
+                    </button>
+</div>
+</div>
+</section>
+<!-- Bento Features Grid -->
+<section class="max-w-7xl mx-auto px-6 py-32 space-y-24">
+<div class="text-center space-y-4">
+<h2 class="text-4xl font-bold tracking-tighter">Engenharia da Conexão</h2>
+<p class="text-on-surface-variant max-w-lg mx-auto">Desenvolvemos ferramentas discretas para que o desvio seja tão suave quanto o destino.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[300px]">
+<!-- Smart Swipe -->
+<div class="md:col-span-8 bg-surface-container-low rounded-3xl p-10 flex flex-col justify-between overflow-hidden relative group">
+<div class="relative z-10 max-w-md">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined" data-icon="gesture">gesture</span>
+</div>
+<h3 class="text-3xl font-bold mb-4">Smart Swipe</h3>
+<p class="text-on-surface-variant">Inteligência que aprende seus desejos subjacentes. Não apenas rostos, mas intenções, estilos e o ritmo de vida que você procura.</p>
+</div>
+<div class="absolute right-0 bottom-0 w-1/2 h-full opacity-30 group-hover:opacity-50 transition-opacity">
+<img alt="Person looking at screen" class="w-full h-full object-cover rounded-tl-3xl grayscale" data-alt="Elegant close-up profile of a woman in low light, subtle shadows on face, sophisticated aesthetic with cinematic grain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9Yx5aWOh6suxSmEp-V39VeWZaqrhLJ4seAeytxHiptxmh6v0HF52gARGsIzQkPbUEXnIrVzE74ADhdW-cgzc2DVctx-h69yr3_YjX_-qmUjkC9llbWSuCFiIjLUEh1lWQeMZw_Tx9aeX_V1NjSREC4ySlJN2iGdaSBz9xs9cXcMDZ3N4vDBFynubA_cDHQrGPUp-K0h11pTbFZG1XIPXA4UP73om_Z2vncVTWOQnM620aeIjJI_KIjbmeoQIa7sjtG8E6-2a4yDFO"/>
+</div>
+</div>
+<!-- AI Chat Support -->
+<div class="md:col-span-4 bg-surface-container-high rounded-3xl p-10 flex flex-col justify-center border border-outline-variant/10">
+<div class="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center mb-6 text-tertiary">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<h3 class="text-2xl font-bold mb-4">AI Chat Support</h3>
+<p class="text-on-surface-variant text-sm">Um concierge digital disponível 24/7 para quebrar o gelo ou garantir que sua privacidade nunca seja comprometida.</p>
+</div>
+<!-- Compatibility Score -->
+<div class="md:col-span-4 bg-surface-container-highest rounded-3xl p-10 flex flex-col justify-end relative overflow-hidden">
+<div class="absolute top-0 right-0 p-8">
+<div class="text-5xl font-black text-primary/20">98%</div>
+</div>
+<div class="relative z-10">
+<h3 class="text-2xl font-bold mb-2">Compatibility Score</h3>
+<p class="text-on-surface-variant text-sm">Algoritmos de precisão que analisam 42 pontos de personalidade para garantir encontros que realmente ressoam.</p>
+</div>
+</div>
+<!-- Branding Moment -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-3xl p-10 flex items-center justify-center border border-primary/10 relative overflow-hidden">
+<div class="absolute inset-0 deviation-gradient opacity-5"></div>
+<div class="text-center relative z-10">
+<div class="text-primary font-black text-5xl tracking-tighter mb-4">Privacidade Absoluta.</div>
+<p class="text-on-surface-variant max-w-sm mx-auto">Criptografia de ponta a ponta em cada mensagem, cada foto e cada desvio.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Dynamic Visual Section -->
+<section class="py-32 bg-surface-container-low/50">
+<div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center gap-20">
+<div class="flex-1 space-y-8">
+<h2 class="text-5xl font-black tracking-tight leading-tight">Um design feito para ser <span class="text-secondary italic">sentido</span>.</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed">
+                        Esqueça os aplicativos de encontros comuns. O Desvio foi construído com a estética de uma revista de moda e a funcionalidade de um clube privado. Aqui, cada detalhe visual foi pensado para relaxar os olhos e aguçar os sentidos.
+                    </p>
+<ul class="space-y-4">
+<li class="flex items-center gap-3 text-on-surface">
+<span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+<span>Interface livre de ruídos e anúncios</span>
+</li>
+<li class="flex items-center gap-3 text-on-surface">
+<span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+<span>Modo Fantasma para navegação invisível</span>
+</li>
+<li class="flex items-center gap-3 text-on-surface">
+<span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+<span>Verificação biométrica obrigatória</span>
+</li>
+</ul>
+</div>
+<div class="flex-1 relative">
+<div class="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl">
+<img alt="Luxury lifestyle" class="w-full h-full object-cover" data-alt="Abstract close-up of a premium glass perfume bottle on a reflective black surface, dramatic lighting, deep violet and amber reflections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzXuiqpawD_O-EN8wdqL-eQPL0AaW4zqUYQ_3cR6UcAgybOx15BzG9Z4LhQKzCPaNb63WEKeKiiR8SX31ugtPt-s9P7G3P4a42V5a9klL_0xjxanTqZC2V_Mm7RL9panct1tiRckfoU0uKhWX8pOini0rfBnMOzz9aCCisJsHN9_7uzOBPn1g-egs7JHgiuummmffMOCCxYc3ATfhj8BlxEHb2gWccdaeGl054_wuXbACCuq279g4JQZ5koKCcMpeV1ZoAOyxNl4eV"/>
+</div>
+<!-- Overlapping element to break the grid as per guidelines -->
+<div class="absolute -bottom-10 -left-10 glass-panel p-8 rounded-2xl border border-outline-variant/20 hidden lg:block">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full overflow-hidden bg-primary-container">
+<img alt="Member avatar" data-alt="Close-up of a stylish person with short hair, confident expression, high-end fashion photography style, soft focus background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZckvo9pIFWzsFm0btx_tYiaUQRg42i2ZRvWGOWfAqsO2lKktzhJSUJ-AW5ScHlMq0cUJ8zwe83lpz7g0C0ESisEOpFjpNjVwKfHDqXhqSkdRrGIGvR41rFVZt8zqTJkqNdCCVBD9gp7YfwctNqWhnNGwQNMtWaXASUtqoCLdsQHpHQ3noaX8eN8EaVddrWrSfW0BOpY2yrVxvWK8fJW58TM-XsTOtaG6NoOXBUNOu7c6qg1iLg1NHowhJazf6xfBn0nQpYvIUcS6j"/>
+</div>
+<div>
+<div class="font-bold">Valentina, 28</div>
+<div class="text-xs text-on-surface-variant">Desvio Verificado</div>
+</div>
+</div>
+<p class="text-sm italic text-on-surface-variant">"Onde o comum termina e o extraordinário começa."</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-40 text-center px-6">
+<div class="max-w-3xl mx-auto space-y-12">
+<h2 class="text-5xl md:text-7xl font-black tracking-tighter leading-none">Pronto para a sua primeira <span class="text-primary">desviação</span>?</h2>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+<button class="w-full sm:w-auto px-12 py-5 rounded-full deviation-gradient text-on-primary font-bold text-xl shadow-[0_20px_40px_rgba(186,158,255,0.15)] hover:scale-105 transition-transform">
+                        Criar Perfil Privado
+                    </button>
+</div>
+<p class="text-on-surface-variant font-label tracking-widest uppercase text-xs">Membros limitados por região para exclusividade total.</p>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 px-6 flex flex-col items-center gap-6 w-full mt-20 tonal-shift border-t border-[#262626]/30 bg-[#0e0e0e]">
+<div class="text-lg font-bold text-white font-['Plus_Jakarta_Sans']">Desvio</div>
+<div class="flex flex-wrap justify-center gap-8 font-['Inter'] text-xs text-[#adaaaa]">
+<a class="hover:text-[#ba9eff] transition-colors" href="#">Privacy</a>
+<a class="hover:text-[#ba9eff] transition-colors" href="#">Terms</a>
+<a class="hover:text-[#ba9eff] transition-colors" href="#">Safety</a>
+<a class="hover:text-[#ba9eff] transition-colors" href="#">Contact</a>
+</div>
+<div class="text-[#adaaaa] text-xs font-['Inter'] mt-4">
+            © 2024 Desvio. The Velvet Deviation.
+        </div>
+</footer>
+<!-- BottomNavBar (Mobile Only suppression as per rules - logic implies landing pages shouldn't have app-like docks if transactional) -->
+<!-- However, to follow JSON definition for the product environment: -->
+<div class="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex justify-around items-center px-8 w-[90%] max-w-lg bg-[#000000]/80 backdrop-blur-lg rounded-full py-3 shadow-[0_20px_40px_rgba(186,158,255,0.08)]">
+<div class="flex flex-col items-center justify-center text-[#ba9eff] after:content-[''] after:w-1 after:h-1 after:bg-[#ba9eff] after:rounded-full after:mt-1 hover:text-white transition-all scale-90 duration-300 active:scale-95 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#adaaaa] hover:text-white transition-all scale-90 duration-300 active:scale-95 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#adaaaa] hover:text-white transition-all scale-90 duration-300 active:scale-95 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#adaaaa] hover:text-white transition-all scale-90 duration-300 active:scale-95 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+</div>
+</body></html>

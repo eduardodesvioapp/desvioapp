@@ -1,0 +1,19 @@
+[Unit]
+Description=Desvio admin mailer worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=desvio
+WorkingDirectory=/opt/desvio/admin-mailer
+EnvironmentFile=/opt/desvio/admin-mailer/.env
+ExecStart=/usr/bin/node worker.mjs
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=admin-mailer
+
+[Install]
+WantedBy=multi-user.target
