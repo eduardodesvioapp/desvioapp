@@ -56,6 +56,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_clean_content TEXT;
   v_numbers_only TEXT;
+  v_is_bot BOOLEAN;
   
   -- E-mails: Detecta padrões com espaços ou marcações de bypass (at, dot, [at])
   email_pattern TEXT := '([a-zA-Z0-9._%+-]+)\s*(@|\[at\]|\(at\)|at)\s*([a-zA-Z0-9.-]+)\s*(\.|\[dot\]|\(dot\)|dot)\s*([a-zA-Z]{2,})';
@@ -63,6 +64,12 @@ DECLARE
   -- Redes Sociais: Palavras-chave de redes comuns + handles
   social_pattern TEXT := '(insta(gram)?|face(book)?|whats(app)?|wpp|zap|telegram|tg|snap(chat)?|twitter|tt|tiktok|discord|dc)\s*(:|é|e|:|handle|user|perfil)?\s*(@?[a-zA-Z0-9._-]+)|(instagram\.com|facebook\.com|wa\.me|t\.me)';
 BEGIN
+  -- Pula filtro se o remetente for um perfil de IA (is_human = FALSE)
+  SELECT is_human INTO v_is_bot FROM users WHERE id = NEW.sender_id;
+  IF v_is_bot = FALSE THEN
+    RETURN NEW;
+  END IF;
+
   -- 1. Normaliza todo o texto para letras minúsculas
   v_clean_content := lower(NEW.content);
 

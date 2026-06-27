@@ -1,0 +1,11 @@
+name = "desvio-r2-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+R2_BUCKET_NAME = "desvio-storage"
+R2_PUBLIC_URL = "https://storage.desvio.app.br"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "desvio-storage"

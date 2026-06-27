@@ -1,7 +1,7 @@
 -- =========================================================
 -- 🚀 DESVIO - INSTALAÇÃO COMPLETA DO BANCO DE DADOS
 -- Arquivo consolidado: tabelas, tipos, índices, funções,
--- triggers, RLS, storage e realtime.
+-- triggers, RLS, integracao com Cloudflare R2 e realtime.
 -- Compatível com: Supabase (Postgres 15+)
 -- Uso: executar uma única vez em projeto limpo OU após nuke.
 -- =========================================================
@@ -639,9 +639,16 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_clean_content TEXT;
     v_numbers_only  TEXT;
+    v_is_bot        BOOLEAN;
     email_pattern   TEXT := '([a-zA-Z0-9._%+-]+)\s*(@|\[at\]|\(at\)|at)\s*([a-zA-Z0-9.-]+)\s*(\.|\[dot\]|\(dot\)|dot)\s*([a-zA-Z]{2,})';
     social_pattern  TEXT := '(insta(gram)?|face(book)?|whats(app)?|wpp|zap|telegram|tg|snap(chat)?|twitter|tt|tiktok|discord|dc)\s*(:|é|e|:|handle|user|perfil)?\s*(@?[a-zA-Z0-9._-]+)|(instagram\.com|facebook\.com|wa\.me|t\.me)';
 BEGIN
+    -- Pula filtro se o remetente for um perfil de IA (is_human = FALSE)
+    SELECT is_human INTO v_is_bot FROM public.users WHERE id = NEW.sender_id;
+    IF v_is_bot = FALSE THEN
+        RETURN NEW;
+    END IF;
+
     v_clean_content := lower(NEW.content);
 
     IF v_clean_content ~* email_pattern OR v_clean_content ~* social_pattern THEN
@@ -943,15 +950,12 @@ DECLARE
     v_skin        TEXT;
     v_weight      TEXT;
     v_max_dist    FLOAT;
+    v_img_idx     INT;
     v_hair_en     TEXT;
     v_skin_en     TEXT;
     v_weight_en   TEXT;
     v_gender_en   TEXT;
     v_img_url     TEXT;
-    v_storage_path TEXT;
-    v_s_url       TEXT;
-    v_s_key       TEXT;
-    v_resp        extensions.http_response;
 BEGIN
     -- 0. Limpa IAs antigas da mesma região
     DELETE FROM public.users
@@ -1074,51 +1078,35 @@ BEGIN
     v_weight_en := CASE v_weight WHEN 'Gordo(a)' THEN 'plus-size' WHEN 'Magro(a)' THEN 'thin' ELSE 'average' END;
     v_gender_en := CASE v_gender WHEN 'Mulher' THEN 'women' ELSE 'men' END;
 
-    v_img_url      := 'https://randomuser.me/api/portraits/' || v_gender_en || '/' || floor(random() * 99 + 1) || '.jpg';
-    v_storage_path := v_new_id::text || '.jpg';
+    -- URL fonte com índice único (evita colisão de imagem entre perfis IA)
+    v_img_idx := floor(random() * 100);
+    WHILE EXISTS (
+        SELECT 1 FROM public.users
+        WHERE is_human = FALSE
+          AND profile_image_url LIKE '%' || v_gender_en || '/' || v_img_idx || '.jpg'
+    ) LOOP
+        v_img_idx := floor(random() * 100);
+    END LOOP;
+    v_img_url := 'https://randomuser.me/api/portraits/' || v_gender_en || '/' || v_img_idx || '.jpg';
 
-    SELECT key_value INTO v_s_url FROM public.secrets WHERE key_name = 'SUPABASE_URL';
-    SELECT key_value INTO v_s_key FROM public.secrets WHERE key_name = 'SUPABASE_SERVICE_KEY';
-
-    BEGIN
-        v_resp := extensions.http_get(v_img_url);
-        IF v_resp.status = 200 AND v_resp.content IS NOT NULL AND v_s_url IS NOT NULL THEN
-            v_resp := extensions.http((
-                'POST',
-                v_s_url || '/storage/v1/object/avatars/' || v_storage_path,
-                ARRAY[
-                    extensions.http_header('Authorization', 'Bearer ' || v_s_key),
-                    extensions.http_header('apikey', v_s_key)
-                ],
-                'image/jpeg',
-                v_resp.content::text
-            )::extensions.http_request);
-
-            INSERT INTO public.ai_generation_logs (status_code, response_text, target_url, context)
-            VALUES (v_resp.status, LEFT(v_resp.content::text, 200),
-                    v_s_url || '/storage/v1/object/avatars/' || v_storage_path, 'Upload Storage');
-
-            IF v_resp.status BETWEEN 200 AND 299 THEN
-                v_avatar := v_s_url || '/storage/v1/object/public/avatars/' || v_storage_path;
-            ELSE
-                v_avatar := v_img_url;
-            END IF;
-        ELSE
-            v_avatar := v_img_url;
-        END IF;
-    EXCEPTION WHEN OTHERS THEN
-        v_avatar := v_img_url;
-    END;
+    -- O banco nao envia arquivos ao R2. Avatares gerados usam a URL de origem;
+    -- uploads persistentes sao responsabilidade do Worker do Cloudflare R2.
+    v_avatar := v_img_url;
 
     -- 4. Inserir perfil IA
     INSERT INTO public.users (
         id, name, age, gender, city, latitude, longitude, bio, profile_image_url,
         is_human, profile_score, last_active, height, eyes_color, hair_color,
-        skin_color, weight, email
+        skin_color, weight, email, ai_config
     ) VALUES (
         v_new_id, v_name, v_age, v_gender, v_city, v_lat, v_lng, v_bio, v_avatar,
         FALSE, 98, NOW(), v_height, v_eyes, v_hair, v_skin, v_weight,
-        v_new_id::text || '@desvio.ai'
+        v_new_id::text || '@desvio.ai',
+        jsonb_build_object(
+            'model', 'gemini-1.5-flash',
+            'personality', 'Você é ' || v_name || ', ' || v_age || ' anos. ' || v_bio || ' Responda de forma natural, simpática e breve. Use linguagem casual do dia a dia.',
+            'temperature', 0.8
+        )
     );
 
     -- 5. Interesses
@@ -1642,12 +1630,29 @@ CREATE POLICY "matches_delete_own" ON public.matches FOR DELETE
 DROP POLICY IF EXISTS "messages_select"         ON public.messages;
 DROP POLICY IF EXISTS "messages_insert"         ON public.messages;
 DROP POLICY IF EXISTS "messages_update_own"     ON public.messages;
+DROP POLICY IF EXISTS "own_messages"            ON public.messages;
 CREATE POLICY "messages_select" ON public.messages FOR SELECT
-    USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-CREATE POLICY "messages_insert" ON public.messages FOR INSERT WITH CHECK (
-    auth.uid() = sender_id
-    AND EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND profile_score >= 85)
-);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.matches
+            WHERE matches.id = messages.match_id
+              AND (matches.user1_id = auth.uid() OR matches.user2_id = auth.uid())
+        )
+    );
+CREATE POLICY "messages_insert" ON public.messages FOR INSERT
+    WITH CHECK (
+        (auth.uid() = sender_id)
+        OR
+        (
+            EXISTS (
+                SELECT 1 FROM public.users u
+                JOIN public.matches m ON m.id = match_id
+                WHERE u.id = sender_id
+                  AND u.is_human = FALSE
+                  AND (m.user1_id = auth.uid() OR m.user2_id = auth.uid())
+            )
+        )
+    );
 CREATE POLICY "messages_update_own" ON public.messages FOR UPDATE
     USING (auth.uid() = receiver_id);
 
@@ -1752,42 +1757,16 @@ CREATE POLICY "Apenas admin acessa fila" ON public.ai_chat_queue FOR ALL
     USING (public.is_admin(auth.uid()));
 
 -- =========================================================
--- 9. STORAGE (BUCKETS + POLICIES)
+-- 9. ARMAZENAMENTO DE ARQUIVOS (CLOUDFLARE R2)
 -- =========================================================
-INSERT INTO storage.buckets (id, name, public)
-    VALUES ('media', 'media', TRUE)
-    ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public)
-    VALUES ('avatars', 'avatars', TRUE)
-    ON CONFLICT (id) DO NOTHING;
-
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- bucket: media
-DROP POLICY IF EXISTS "Upload_Media_Owner"     ON storage.objects;
-DROP POLICY IF EXISTS "Manage_Media_Owner"     ON storage.objects;
-DROP POLICY IF EXISTS "View_Media_Public"       ON storage.objects;
-CREATE POLICY "Upload_Media_Owner" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "Manage_Media_Owner" ON storage.objects FOR ALL USING (
-    bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "View_Media_Public" ON storage.objects FOR SELECT
-    USING (bucket_id = 'media');
-
--- bucket: avatars
-DROP POLICY IF EXISTS "Upload_Avatar_Owner"    ON storage.objects;
-DROP POLICY IF EXISTS "Manage_Avatar_Owner"    ON storage.objects;
-DROP POLICY IF EXISTS "View_Avatar_Public"      ON storage.objects;
-CREATE POLICY "Upload_Avatar_Owner" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "Manage_Avatar_Owner" ON storage.objects FOR ALL USING (
-    bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "View_Avatar_Public" ON storage.objects FOR SELECT
-    USING (bucket_id = 'avatars');
+-- Os arquivos sao armazenados fora do Supabase, no Cloudflare R2.
+-- Uploads e demais operacoes sao gerenciados fora do Postgres pelo Worker
+-- do R2. Por isso, esta instalacao nao cria buckets nem policies em
+-- storage.buckets/storage.objects.
+-- O Postgres mantem somente as URLs publicas geradas pelo R2 em:
+--   public.users.profile_image_url
+--   public.user_media.url
+--   public.verification_requests.selfie_url
 
 -- =========================================================
 -- 10. REALTIME (PUBLICATION)
@@ -1882,9 +1861,7 @@ ANALYZE public.reports;
 --      (NÃO inserir manualmente em auth.users via SQL).
 --   2. Popular a tabela public.secrets com as chaves de API:
 --        INSERT INTO public.secrets (key_name, key_value) VALUES
---          ('GEMINI_API_KEY', '<sua_chave>'),
---          ('SUPABASE_URL',    '<sua_url>'),
---          ('SUPABASE_SERVICE_KEY', '<sua_service_key>');
+--          ('GEMINI_API_KEY', '<sua_chave>');
 --   3. Promover um usuário a admin:
 --        UPDATE public.users SET is_admin = TRUE WHERE email = 'voce@desvio.com';
 -- =========================================================

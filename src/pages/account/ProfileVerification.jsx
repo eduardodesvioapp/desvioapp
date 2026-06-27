@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { PageHeader } from '@/components/patterns';
 import { GlassCard, Loading, PremiumButton } from '@/components/ui';
+import { uploadToR2 } from '@/services/r2';
 import { toast } from 'sonner';
 
 export function ProfileVerification() {
@@ -47,15 +48,13 @@ export function ProfileVerification() {
 
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
-      const fileName = `${user.id}/${Date.now()}.jpg`;
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('verification')
-        .upload(fileName, blob);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from('verification').getPublicUrl(fileName);
+      // Upload to R2 via presigned URL
+      const file = new File([blob], `verification-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const { url: publicUrl } = await uploadToR2(file, {
+        folder: 'verification',
+        userId: user.id
+      });
 
       // Criar solicitação no banco
       const { error: dbError } = await supabase

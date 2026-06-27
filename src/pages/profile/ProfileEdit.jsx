@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { validateImageFace } from '@/lib/faceDetection';
 import { generateEmbedding } from '@/lib/embeddings';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { uploadToR2 } from '@/services/r2';
 import { toast } from 'sonner';
 
 const genderOptions = ['Mulher', 'Homem', 'Não-binário', 'Prefiro não dizer'];
@@ -199,21 +200,11 @@ export function ProfileEdit() {
         return;
       }
 
-      setMessage('Face confirmada! Sincronizando...');
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${currentUser.id}/${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      // 1. Upload para o Storage (Bucket 'avatars')
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      // 1. Upload para R2 via presigned URL
+      const { url: publicUrl } = await uploadToR2(file, {
+        folder: 'avatars',
+        userId: currentUser.id
+      });
 
       // 2. Desmarcar fotos de perfil anteriores na tabela CORRETA (user_media)
       await supabase

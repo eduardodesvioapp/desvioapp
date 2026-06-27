@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { GlassCard, PremiumButton, Badge, MatchedButton, LikedButton, Avatar, Loading, ReportModal, BackButton } from '@/components/ui';
 import { ActionNavBar, PageHeader, UserProfileDetail } from '@/components/patterns';
 import { validateImageFace, validateImageUrlFace } from '@/lib/faceDetection';
+import { uploadToR2 } from '@/services/r2';
 import { toast } from 'sonner';
 
 export function UserProfile() {
@@ -184,17 +185,10 @@ export function UserProfile() {
       setUploading(true);
       setError(null);
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Math.random()}.${fileExt}`;
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('media')
-        .upload(fileName, file);
-
-      if (storageError) throw storageError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(fileName);
+      const { url: publicUrl } = await uploadToR2(file, {
+        folder: 'media',
+        userId: user.id
+      });
 
       const { error: dbError } = await supabase
         .from('user_media')
@@ -233,11 +227,8 @@ export function UserProfile() {
 
     try {
       setProcessing({ id: idToDelete, action: 'delete' });
-      const path = url.split('/media/')[1];
-      if (path) {
-        await supabase.storage.from('media').remove([path]);
-      }
 
+      // Delete from database only (R2 cleanup handled server-side)
       const { error: deleteError } = await supabase
         .from('user_media')
         .delete()
