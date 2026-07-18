@@ -24,7 +24,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.desvio-web.rule=Host(`desvio.app.br`)"
       - "traefik.http.routers.desvio-web.entrypoints=websecure"
-      - "traefik.http.routers.desvio-web.tls.certresolver=cloudflare"
+      - "traefik.http.routers.desvio-web.tls.certresolver=letsencryptresolver"
       - "traefik.http.services.desvio-web.loadbalancer.server.port=80"
     networks:
       - desvio-net-01
