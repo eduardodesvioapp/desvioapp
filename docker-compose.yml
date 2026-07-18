@@ -1,5 +1,6 @@
 services:
   web:
+    image: desvio-web
     build:
       context: .
       dockerfile: dockerfile
@@ -28,6 +29,7 @@ services:
       - desvio-net
 
   ai-worker:
+    image: desvio-ai-worker
     build:
       context: .
       dockerfile: Dockerfile.worker
@@ -45,6 +47,7 @@ services:
       - desvio-net
 
   admin-mailer:
+    image: desvio-admin-mailer
     build:
       context: ./scripts/admin-mailer
       dockerfile: Dockerfile
