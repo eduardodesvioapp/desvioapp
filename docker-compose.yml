@@ -25,8 +25,6 @@ services:
     restart: unless-stopped
     depends_on:
       - redis
-    networks:
-      - desvio-net
 
   ai-worker:
     image: desvio-ai-worker
@@ -43,8 +41,6 @@ services:
     restart: always
     depends_on:
       - redis
-    networks:
-      - desvio-net
 
   admin-mailer:
     image: desvio-admin-mailer
@@ -65,8 +61,6 @@ services:
     restart: always
     depends_on:
       - redis
-    networks:
-      - desvio-net
 
   redis:
     image: redis:7-alpine
@@ -74,12 +68,6 @@ services:
     volumes:
       - redis-data:/data
     restart: unless-stopped
-    networks:
-      - desvio-net
 
 volumes:
   redis-data:
-
-networks:
-  desvio-net:
-    driver: overlay
