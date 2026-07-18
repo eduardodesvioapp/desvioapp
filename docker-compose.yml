@@ -1,25 +1,6 @@
 services:
   web:
-    image: desvio-web
-    build:
-      context: .
-      dockerfile: dockerfile
-      args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
-        VITE_SUPABASE_STORAGE_BUCKET: ${VITE_SUPABASE_STORAGE_BUCKET:-}
-        VITE_R2_ACCOUNT_ID: ${VITE_R2_ACCOUNT_ID:-}
-        VITE_R2_ACCESS_KEY_ID: ${VITE_R2_ACCESS_KEY_ID:-}
-        VITE_R2_SECRET_ACCESS_KEY: ${VITE_R2_SECRET_ACCESS_KEY:-}
-        VITE_R2_BUCKET_NAME: ${VITE_R2_BUCKET_NAME:-}
-        VITE_R2_PUBLIC_URL: ${VITE_R2_PUBLIC_URL:-}
-        VITE_R2_WORKER_URL: ${VITE_R2_WORKER_URL:-}
-        VITE_CF_ZONE: ${VITE_CF_ZONE:-}
-        VITE_HUGGING_FACE_ACCESS_TOKEN: ${VITE_HUGGING_FACE_ACCESS_TOKEN:-}
-        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-}
-        VITE_GEMINI_API_KEY_2: ${VITE_GEMINI_API_KEY_2:-}
-        VITE_GEMINI_API_KEY_3: ${VITE_GEMINI_API_KEY_3:-}
-        VITE_GEMINI_API_KEY_4: ${VITE_GEMINI_API_KEY_4:-}
+    image: desvio-web:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.desvio-web.rule=Host(`desvio.app.br`)"
@@ -29,14 +10,9 @@ services:
     networks:
       - desvio-net-01
     restart: unless-stopped
-    depends_on:
-      - redis
 
   ai-worker:
-    image: desvio-ai-worker
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    image: desvio-ai-worker:latest
     environment:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-}
       - VITE_SUPABASE_SERVICE_ROLE_KEY=${VITE_SUPABASE_SERVICE_ROLE_KEY:-}
@@ -45,14 +21,9 @@ services:
       - VITE_GEMINI_API_KEY_3=${VITE_GEMINI_API_KEY_3:-}
       - VITE_GEMINI_API_KEY_4=${VITE_GEMINI_API_KEY_4:-}
     restart: always
-    depends_on:
-      - redis
 
   admin-mailer:
-    image: desvio-admin-mailer
-    build:
-      context: ./scripts/admin-mailer
-      dockerfile: Dockerfile
+    image: desvio-admin-mailer:latest
     environment:
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
@@ -65,8 +36,6 @@ services:
       - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-5000}
       - MAX_ATTEMPTS=${MAX_ATTEMPTS:-5}
     restart: always
-    depends_on:
-      - redis
 
   redis:
     image: redis:7-alpine
