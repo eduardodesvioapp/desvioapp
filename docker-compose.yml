@@ -9,11 +9,84 @@ services:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
         VITE_SUPABASE_STORAGE_BUCKET: ${VITE_SUPABASE_STORAGE_BUCKET}
+        VITE_R2_ACCOUNT_ID: ${VITE_R2_ACCOUNT_ID}
+        VITE_R2_ACCESS_KEY_ID: ${VITE_R2_ACCESS_KEY_ID}
+        VITE_R2_SECRET_ACCESS_KEY: ${VITE_R2_SECRET_ACCESS_KEY}
+        VITE_R2_BUCKET_NAME: ${VITE_R2_BUCKET_NAME}
+        VITE_R2_PUBLIC_URL: ${VITE_R2_PUBLIC_URL}
+        VITE_R2_WORKER_URL: ${VITE_R2_WORKER_URL}
+        VITE_CF_ZONE: ${VITE_CF_ZONE}
+        VITE_HUGGING_FACE_ACCESS_TOKEN: ${VITE_HUGGING_FACE_ACCESS_TOKEN}
+        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY}
+        VITE_GEMINI_API_KEY_2: ${VITE_GEMINI_API_KEY_2}
+        VITE_GEMINI_API_KEY_3: ${VITE_GEMINI_API_KEY_3}
+        VITE_GEMINI_API_KEY_4: ${VITE_GEMINI_API_KEY_4}
     ports:
       - "80:80"
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - desvio-net
 
   ai-worker:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_SERVICE_ROLE_KEY=${VITE_SUPABASE_SERVICE_ROLE_KEY}
+      - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+      - VITE_GEMINI_API_KEY_2=${VITE_GEMINI_API_KEY_2}
+      - VITE_GEMINI_API_KEY_3=${VITE_GEMINI_API_KEY_3}
+      - VITE_GEMINI_API_KEY_4=${VITE_GEMINI_API_KEY_4}
     restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - desvio-net
+
+  admin-mailer:
+    build:
+      context: ./scripts/admin-mailer
+      dockerfile: ../../Dockerfile.mailer
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_SENDER_NAME=${SMTP_SENDER_NAME:-Desvio}
+      - SMTP_FROM=${SMTP_FROM}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-5000}
+      - MAX_ATTEMPTS=${MAX_ATTEMPTS:-5}
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - desvio-net
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - desvio-net
+
+volumes:
+  redis-data:
+
+networks:
+  desvio-net:
+    driver: bridge
