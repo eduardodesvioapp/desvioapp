@@ -23,8 +23,7 @@ services:
       - "80:80"
     restart: unless-stopped
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     networks:
       - desvio-net
 
@@ -41,8 +40,7 @@ services:
       - VITE_GEMINI_API_KEY_4=${VITE_GEMINI_API_KEY_4:-}
     restart: always
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     networks:
       - desvio-net
 
@@ -63,8 +61,7 @@ services:
       - MAX_ATTEMPTS=${MAX_ATTEMPTS:-5}
     restart: always
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     networks:
       - desvio-net
 
@@ -73,11 +70,6 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     restart: unless-stopped
     networks:
       - desvio-net
