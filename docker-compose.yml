@@ -5,15 +5,15 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_SUPABASE_STORAGE_BUCKET: ${VITE_SUPABASE_STORAGE_BUCKET}
     ports:
       - "80:80"
-    #env_file:
-    #  - .env.local
 
   ai-worker:
     build:
       context: .
       dockerfile: Dockerfile.worker
-    #env_file:
-    #  - .env.local
     restart: always
