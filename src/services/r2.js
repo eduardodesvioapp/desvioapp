@@ -1,6 +1,7 @@
-const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || "https://desvio-r2-worker.your-subdomain.workers.dev";
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || "https://storage.desvio.app";
-const CF_ZONE = import.meta.env.VITE_CF_ZONE || "desvio.app";
+const env = (typeof window !== 'undefined' && window.__ENV) || {}
+const WORKER_URL = import.meta.env.VITE_R2_WORKER_URL || env.VITE_R2_WORKER_URL || "https://desvio-r2-worker.your-subdomain.workers.dev";
+const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || env.VITE_R2_PUBLIC_URL || "https://storage.desvio.app";
+const CF_ZONE = import.meta.env.VITE_CF_ZONE || env.VITE_CF_ZONE || "desvio.app";
 
 export const R2Folders = {
   AVATARS: "avatars",
