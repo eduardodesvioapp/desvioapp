@@ -6,6 +6,7 @@ import { AdminGuard } from '@/routes/guards/AdminGuard';
 import { Landing } from '@/pages/public/Landing';
 import { Signin } from '@/pages/auth/Signin';
 import { Signup } from '@/pages/auth/Signup';
+import { ResetPassword } from '@/pages/auth/ResetPassword';
 import { Privacy } from '@/pages/public/Privacy';
 import { Terms } from '@/pages/public/Terms';
 import { Security } from '@/pages/public/Security';
@@ -58,6 +59,7 @@ export function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/signin" element={<Signin />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/security" element={<Security />} />

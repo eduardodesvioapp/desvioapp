@@ -1,19 +1,12 @@
 -- =========================================================
--- 🚀 DESVIO - INSTALAÇÃO COMPLETA + ADMIN
--- Arquivo único: schema do zero + provisionamento de admin
+-- 🚀 DESVIO - INSTALAÇÃO COMPLETA DO BANCO DE DADOS
+-- Arquivo consolidado: tabelas, tipos, índices, funções,
+-- triggers, RLS, integracao com Cloudflare R2 e realtime.
+-- Compatível com: Supabase (Postgres 15+)
+-- Uso: executar uma única vez em projeto limpo OU após nuke.
 -- =========================================================
--- 📋 ORDEM DE EXECUÇÃO:
---   1. Rode este SQL no SQL Editor (cria todo o schema).
---   2. Crie o usuário admin no painel:
---        Authentication > Users > 'Add user'
---        - Email: admin@desvio.com
---        - Password: (senha forte)
---        - ☑️ Auto Confirm User
---      Copie o UUID gerado.
---   3. Edite a seção 13 (ADMIN) e cole o UUID.
---   4. Rode APENAS a seção 13 (ou o arquivo todo de novo).
+
 -- =========================================================
-=========================================================
 -- 0. EXTENSÕES
 -- =========================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -254,9 +247,10 @@ CREATE TABLE public.reports (
 
 -- 3.12 LOGIN ACTIVITY
 CREATE TABLE public.login_activity (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id    UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    ip_address TEXT,
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    activity_type TEXT DEFAULT 'LOGIN',
+    ip_address    TEXT,
     user_agent TEXT,
     location   JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -962,10 +956,6 @@ DECLARE
     v_weight_en   TEXT;
     v_gender_en   TEXT;
     v_img_url     TEXT;
-    v_storage_path TEXT;
-    v_s_url       TEXT;
-    v_s_key       TEXT;
-    v_resp        extensions.http_response;
 BEGIN
     -- 0. Limpa IAs antigas da mesma região
     DELETE FROM public.users
@@ -1098,40 +1088,10 @@ BEGIN
         v_img_idx := floor(random() * 100);
     END LOOP;
     v_img_url := 'https://randomuser.me/api/portraits/' || v_gender_en || '/' || v_img_idx || '.jpg';
-    v_storage_path := v_new_id::text || '.jpg';
 
-    SELECT key_value INTO v_s_url FROM public.secrets WHERE key_name = 'SUPABASE_URL';
-    SELECT key_value INTO v_s_key FROM public.secrets WHERE key_name = 'SUPABASE_SERVICE_KEY';
-
-    BEGIN
-        v_resp := extensions.http_get(v_img_url);
-        IF v_resp.status = 200 AND v_resp.content IS NOT NULL AND v_s_url IS NOT NULL THEN
-            v_resp := extensions.http((
-                'POST',
-                v_s_url || '/storage/v1/object/avatars/' || v_storage_path,
-                ARRAY[
-                    extensions.http_header('Authorization', 'Bearer ' || v_s_key),
-                    extensions.http_header('apikey', v_s_key)
-                ],
-                'image/jpeg',
-                v_resp.content::text
-            )::extensions.http_request);
-
-            INSERT INTO public.ai_generation_logs (status_code, response_text, target_url, context)
-            VALUES (v_resp.status, LEFT(v_resp.content::text, 200),
-                    v_s_url || '/storage/v1/object/avatars/' || v_storage_path, 'Upload Storage');
-
-            IF v_resp.status BETWEEN 200 AND 299 THEN
-                v_avatar := v_s_url || '/storage/v1/object/public/avatars/' || v_storage_path;
-            ELSE
-                v_avatar := v_img_url;
-            END IF;
-        ELSE
-            v_avatar := v_img_url;
-        END IF;
-    EXCEPTION WHEN OTHERS THEN
-        v_avatar := v_img_url;
-    END;
+    -- O banco nao envia arquivos ao R2. Avatares gerados usam a URL de origem;
+    -- uploads persistentes sao responsabilidade do Worker do Cloudflare R2.
+    v_avatar := v_img_url;
 
     -- 4. Inserir perfil IA
     INSERT INTO public.users (
@@ -1738,8 +1698,11 @@ CREATE POLICY "reports_select_own" ON public.reports FOR SELECT
 
 -- 8.11 LOGIN ACTIVITY
 DROP POLICY IF EXISTS "login_act_select_own"    ON public.login_activity;
+DROP POLICY IF EXISTS "login_act_insert_own"    ON public.login_activity;
 CREATE POLICY "login_act_select_own" ON public.login_activity FOR SELECT
     USING (auth.uid() = user_id);
+CREATE POLICY "login_act_insert_own" ON public.login_activity FOR INSERT 
+    WITH CHECK (auth.uid() = user_id);
 
 -- 8.12 EMERGENCY CONTACTS
 DROP POLICY IF EXISTS "emg_contacts_own"        ON public.emergency_contacts;
@@ -1794,42 +1757,16 @@ CREATE POLICY "Apenas admin acessa fila" ON public.ai_chat_queue FOR ALL
     USING (public.is_admin(auth.uid()));
 
 -- =========================================================
--- 9. STORAGE (BUCKETS + POLICIES)
+-- 9. ARMAZENAMENTO DE ARQUIVOS (CLOUDFLARE R2)
 -- =========================================================
-INSERT INTO storage.buckets (id, name, public)
-    VALUES ('media', 'media', TRUE)
-    ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public)
-    VALUES ('avatars', 'avatars', TRUE)
-    ON CONFLICT (id) DO NOTHING;
-
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- bucket: media
-DROP POLICY IF EXISTS "Upload_Media_Proprio"     ON storage.objects;
-DROP POLICY IF EXISTS "Manage_Media_Proprio"     ON storage.objects;
-DROP POLICY IF EXISTS "View_Media_Publico"       ON storage.objects;
-CREATE POLICY "Upload_Media_Proprio" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "Manage_Media_Proprio" ON storage.objects FOR ALL USING (
-    bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "View_Media_Publico" ON storage.objects FOR SELECT
-    USING (bucket_id = 'media');
-
--- bucket: avatars
-DROP POLICY IF EXISTS "Upload_Avatar_Proprio"    ON storage.objects;
-DROP POLICY IF EXISTS "Manage_Avatar_Proprio"    ON storage.objects;
-DROP POLICY IF EXISTS "View_Avatar_Publico"      ON storage.objects;
-CREATE POLICY "Upload_Avatar_Proprio" ON storage.objects FOR INSERT WITH CHECK (
-    bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "Manage_Avatar_Proprio" ON storage.objects FOR ALL USING (
-    bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text
-);
-CREATE POLICY "View_Avatar_Publico" ON storage.objects FOR SELECT
-    USING (bucket_id = 'avatars');
+-- Os arquivos sao armazenados fora do Supabase, no Cloudflare R2.
+-- Uploads e demais operacoes sao gerenciados fora do Postgres pelo Worker
+-- do R2. Por isso, esta instalacao nao cria buckets nem policies em
+-- storage.buckets/storage.objects.
+-- O Postgres mantem somente as URLs publicas geradas pelo R2 em:
+--   public.users.profile_image_url
+--   public.user_media.url
+--   public.verification_requests.selfie_url
 
 -- =========================================================
 -- 10. REALTIME (PUBLICATION)
@@ -1917,81 +1854,14 @@ ANALYZE public.profile_visits;
 ANALYZE public.messages;
 ANALYZE public.reports;
 
--- 
-=========================================================
--- 13. PROVISIONAMENTO DO ADMIN
 -- =========================================================
--- ⚠️  RODE APENAS APÓS CRIAR O USUÁRIO NO PAINEL AUTH.
+-- ✅ FIM DA INSTALAÇÃO
+-- Próximos passos sugeridos (fora do SQL):
+--   1. Criar usuários via Painel Supabase > Authentication > Users
+--      (NÃO inserir manualmente em auth.users via SQL).
+--   2. Popular a tabela public.secrets com as chaves de API:
+--        INSERT INTO public.secrets (key_name, key_value) VALUES
+--          ('GEMINI_API_KEY', '<sua_chave>');
+--   3. Promover um usuário a admin:
+--        UPDATE public.users SET is_admin = TRUE WHERE email = 'voce@desvio.com';
 -- =========================================================
-
-DO $$
-DECLARE
-    v_admin_id    UUID := 'c8a9996e-a430-46f0-bfca-02a1cdab09d6'; -- ⚠️ COLE O UUID DO PAINEL AQUI
-    v_email       TEXT := 'eduardo.desvio.app@gmail.com';
-    v_name        TEXT := 'Administrador';
-    v_age         INT  := 30;
-    v_gender      TEXT := 'Outro';
-    v_city        TEXT := 'Porto Alegre';
-    v_lat         NUMERIC := -30.0346;
-    v_lng         NUMERIC := -51.2177;
-BEGIN
-    -- 0. Limpeza defensiva (caso uma execução anterior tenha falhado no meio)
-    DELETE FROM public.user_balances   WHERE user_id = v_admin_id;
-    DELETE FROM public.user_settings   WHERE user_id = v_admin_id;
-    DELETE FROM public.user_interests  WHERE user_id = v_admin_id;
-    DELETE FROM public.users           WHERE id = v_admin_id;
-
-    -- 1. Perfil público (id = mesmo UUID do auth.users)
-    INSERT INTO public.users (
-        id, email, name, age, gender, city,
-        latitude, longitude, profile_image_url,
-        is_admin, is_human, verification_status,
-        last_active, created_at
-    )
-    VALUES (
-        v_admin_id, v_email, v_name, v_age, v_gender, v_city,
-        v_lat, v_lng, NULL,
-        TRUE, TRUE, 'verified',
-        NOW(), NOW()
-    )
-    ON CONFLICT (id) DO UPDATE SET
-        is_admin = TRUE,
-        verification_status = 'verified',
-        name = EXCLUDED.name,
-        email = EXCLUDED.email;
-
-    -- 2. Settings (preferências padrão)
-    INSERT INTO public.user_settings (
-        user_id, push_messages, push_matches, profile_visible,
-        show_distance, max_distance, theme, invisible_mode, is_premium
-    )
-    VALUES (
-        v_admin_id, TRUE, TRUE, TRUE,
-        TRUE, 100, 'dark', FALSE, TRUE
-    )
-    ON CONFLICT (user_id) DO NOTHING;
-
-    -- 3. Carteira (10 créditos grátis + premium sem expiração)
-    INSERT INTO public.user_balances (
-        user_id, credits, referral_code, subscription_tier, subscription_expires_at,
-        created_at, updated_at
-    )
-    VALUES (
-        v_admin_id, 1000, public.generate_unique_referral_code(), 'premium',
-        NOW() + INTERVAL '100 years', NOW(), NOW()
-    )
-    ON CONFLICT (user_id) DO UPDATE SET
-        credits = 1000,
-        subscription_tier = 'premium',
-        subscription_expires_at = NOW() + INTERVAL '100 years',
-        updated_at = NOW();
-
-    -- 4. Interesses (vincula todos como exemplo)
-    INSERT INTO public.user_interests (user_id, interest_id)
-    SELECT v_admin_id, id FROM public.interests
-    ON CONFLICT DO NOTHING;
-
-    RAISE NOTICE '✅ Admin criado/atualizado: % (%)', v_name, v_email;
-    RAISE NOTICE '   UUID: %', v_admin_id;
-    RAISE NOTICE '   Credenciais: use o email e senha definidos no painel Auth';
-END $$;

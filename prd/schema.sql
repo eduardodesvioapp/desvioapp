@@ -231,6 +231,78 @@ CREATE TABLE public.safety_alerts (
 );
 
 -- ========================
+-- USER SETTINGS
+-- ========================
+CREATE TABLE public.user_settings (
+    user_id          UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    push_messages    BOOLEAN DEFAULT TRUE,
+    push_matches     BOOLEAN DEFAULT TRUE,
+    profile_visible  BOOLEAN DEFAULT TRUE,
+    show_distance    BOOLEAN DEFAULT TRUE,
+    max_distance     INT DEFAULT 50,
+    theme            TEXT DEFAULT 'dark',
+    invisible_mode   BOOLEAN DEFAULT FALSE,
+    is_premium       BOOLEAN DEFAULT FALSE,
+    created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ========================
+-- TIPOS ENUM (MONETIZAÇÃO)
+-- ========================
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type') THEN
+        CREATE TYPE transaction_type AS ENUM (
+            'daily_check_in', 'referral_reward', 'purchase',
+            'ai_chat', 'radar_boost', 'reveal_like', 'unlock_gallery'
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'referral_status') THEN
+        CREATE TYPE referral_status AS ENUM ('pending', 'completed', 'failed');
+    END IF;
+END$$;
+
+-- ========================
+-- USER BALANCES (CARTEIRA)
+-- ========================
+CREATE TABLE public.user_balances (
+    user_id                 UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    credits                 INT NOT NULL DEFAULT 10 CHECK (credits >= 0),
+    referral_code           VARCHAR(10) UNIQUE NOT NULL,
+    daily_streak            INT NOT NULL DEFAULT 0,
+    last_check_in           TIMESTAMPTZ,
+    subscription_tier       VARCHAR(20) NOT NULL DEFAULT 'free',
+    subscription_expires_at TIMESTAMPTZ,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ========================
+-- CREDIT TRANCTIONS (HISTÓRICO)
+-- ========================
+CREATE TABLE public.credit_transactions (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    amount     INT NOT NULL,
+    type       transaction_type NOT NULL,
+    metadata   JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ========================
+-- REFERRALS (INDICAÇÕES)
+-- ========================
+CREATE TABLE public.referrals (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    referrer_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    referee_id  UUID UNIQUE NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    status      referral_status NOT NULL DEFAULT 'pending',
+    rewarded    BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ========================
 -- ÍNDICES
 -- ========================
 CREATE INDEX idx_users_location              ON public.users(latitude, longitude);
@@ -248,6 +320,10 @@ CREATE INDEX idx_reports_created_at          ON public.reports(created_at DESC);
 CREATE INDEX idx_login_activity_user_id      ON public.login_activity(user_id);
 CREATE INDEX idx_emergency_contacts_user     ON public.emergency_contacts(user_id);
 CREATE INDEX idx_verif_req_user              ON public.verification_requests(user_id);
+CREATE INDEX idx_user_balances_ref_code      ON public.user_balances(referral_code);
+CREATE INDEX idx_credit_trans_user_id        ON public.credit_transactions(user_id);
+CREATE INDEX idx_referrals_referrer_id       ON public.referrals(referrer_id);
+CREATE INDEX idx_referrals_referee_id        ON public.referrals(referee_id, status);
 
 -- ========================
 -- RLS
@@ -265,6 +341,10 @@ ALTER TABLE public.login_activity          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.emergency_contacts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.verification_requests   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.safety_alerts           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_settings           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_balances           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.credit_transactions     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.referrals               ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES: USERS
 CREATE POLICY "users_public_select"   ON public.users FOR SELECT USING (TRUE);
@@ -339,6 +419,21 @@ CREATE POLICY "verif_req_insert_own"  ON public.verification_requests FOR INSERT
 -- POLICIES: SAFETY ALERTS
 CREATE POLICY "safety_alerts_select_own" ON public.safety_alerts FOR SELECT USING (auth.uid() = user_id);
 
+-- POLICIES: USER SETTINGS
+CREATE POLICY "settings_all" ON public.user_settings FOR ALL USING (auth.uid() = user_id);
+
+-- POLICIES: USER BALANCES
+CREATE POLICY "balances_select_own" ON public.user_balances FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "balances_select_admin" ON public.user_balances FOR SELECT USING (public.is_admin(auth.uid()));
+
+-- POLICIES: CREDIT TRANSACTIONS
+CREATE POLICY "transactions_select_own" ON public.credit_transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "transactions_select_admin" ON public.credit_transactions FOR SELECT USING (public.is_admin(auth.uid()));
+
+-- POLICIES: REFERRALS
+CREATE POLICY "referrals_select_own" ON public.referrals FOR SELECT USING (auth.uid() = referrer_id OR auth.uid() = referee_id);
+CREATE POLICY "referrals_select_admin" ON public.referrals FOR SELECT USING (public.is_admin(auth.uid()));
+
 -- ========================
 -- GRANTS
 -- ========================
@@ -355,6 +450,10 @@ GRANT ALL ON public.login_activity          TO authenticated;
 GRANT ALL ON public.emergency_contacts      TO authenticated;
 GRANT ALL ON public.verification_requests   TO authenticated;
 GRANT ALL ON public.safety_alerts           TO authenticated;
+GRANT ALL ON public.user_settings           TO authenticated;
+GRANT ALL ON public.user_balances           TO authenticated;
+GRANT ALL ON public.credit_transactions     TO authenticated;
+GRANT ALL ON public.referrals               TO authenticated;
 GRANT SELECT ON public.users                TO anon;
 GRANT SELECT ON public.user_media           TO anon;
 
@@ -649,6 +748,195 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ========================
+-- FUNÇÕES DE MONETIZAÇÃO
+-- ========================
+
+-- Função para gerar código de indicação único
+CREATE OR REPLACE FUNCTION public.generate_unique_referral_code()
+RETURNS VARCHAR(10) AS $$
+DECLARE
+    v_code VARCHAR(10);
+    v_exists BOOLEAN;
+BEGIN
+    LOOP
+        v_code := 'DSV-' || UPPER(substring(md5(random()::text) from 1 for 6));
+        SELECT EXISTS(SELECT 1 FROM public.user_balances WHERE referral_code = v_code) INTO v_exists;
+        IF NOT v_exists THEN
+            RETURN v_code;
+        END IF;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Atualizar referral_code existente com código único
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN SELECT user_id FROM public.user_balances WHERE referral_code IS NULL OR referral_code = ''
+    LOOP
+        UPDATE public.user_balances
+        SET referral_code = public.generate_unique_referral_code()
+        WHERE user_id = r.user_id;
+    END LOOP;
+END$$;
+
+-- Transação segura de créditos (protegida contra race conditions)
+CREATE OR REPLACE FUNCTION public.execute_credit_transaction(
+    p_user_id UUID,
+    p_amount INT,
+    p_type transaction_type,
+    p_metadata JSONB DEFAULT '{}'::jsonb
+) RETURNS INT AS $$
+DECLARE
+    v_current_balance INT;
+BEGIN
+    INSERT INTO public.user_balances (user_id, credits, referral_code)
+    VALUES (p_user_id, 10, public.generate_unique_referral_code())
+    ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
+    RETURNING credits INTO v_current_balance;
+
+    SELECT credits INTO v_current_balance
+    FROM public.user_balances WHERE user_id = p_user_id FOR UPDATE;
+
+    IF p_amount < 0 AND (v_current_balance + p_amount) < 0 THEN
+        RAISE EXCEPTION 'Saldo insuficiente. Atual: %, Requerido: %', v_current_balance, ABS(p_amount);
+    END IF;
+
+    UPDATE public.user_balances
+    SET credits = credits + p_amount, updated_at = NOW()
+    WHERE user_id = p_user_id;
+
+    INSERT INTO public.credit_transactions (user_id, amount, type, metadata)
+    VALUES (p_user_id, p_amount, p_type, p_metadata);
+
+    RETURN (v_current_balance + p_amount);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Bônus diário progressivo (daily streak)
+CREATE OR REPLACE FUNCTION public.claim_daily_bonus(p_user_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+    v_balance RECORD;
+    v_streak INT := 0;
+    v_credits INT := 5;
+    v_new_balance INT;
+    v_milestone BOOLEAN := FALSE;
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    SELECT * INTO v_balance FROM public.user_balances WHERE user_id = p_user_id;
+
+    IF v_balance.user_id IS NULL THEN
+        INSERT INTO public.user_balances (user_id, credits, daily_streak, last_check_in)
+        VALUES (p_user_id, 10, 0, NULL) RETURNING * INTO v_balance;
+    END IF;
+
+    IF v_balance.last_check_in IS NOT NULL AND (v_now - v_balance.last_check_in) < INTERVAL '20 hours' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Já resgatou hoje. Retorne amanhã!');
+    END IF;
+
+    IF v_balance.last_check_in IS NULL THEN
+        v_streak := 1; v_credits := 5;
+    ELSIF (v_now - v_balance.last_check_in) > INTERVAL '40 hours' THEN
+        v_streak := 1; v_credits := 5;
+    ELSE
+        v_streak := v_balance.daily_streak + 1;
+        IF v_streak = 2 THEN v_credits := 6;
+        ELSIF v_streak = 3 THEN v_credits := 7;
+        ELSIF v_streak = 4 THEN v_credits := 8;
+        ELSIF v_streak = 5 THEN v_credits := 9;
+        ELSIF v_streak = 6 THEN v_credits := 10;
+        ELSIF v_streak >= 7 THEN v_credits := 25; v_milestone := TRUE; v_streak := 7;
+        END IF;
+    END IF;
+
+    IF v_balance.subscription_tier != 'free' AND (v_balance.subscription_expires_at IS NULL OR v_balance.subscription_expires_at > v_now) THEN
+        v_credits := v_credits + 5;
+    END IF;
+
+    DECLARE v_save_streak INT := v_streak;
+    BEGIN
+        IF v_milestone THEN v_save_streak := 0; END IF;
+        SELECT public.execute_credit_transaction(p_user_id, v_credits, 'daily_check_in',
+            jsonb_build_object('streak', v_streak, 'earned', v_credits, 'milestone', v_milestone)) INTO v_new_balance;
+        UPDATE public.user_balances SET daily_streak = v_save_streak, last_check_in = v_now, updated_at = v_now WHERE user_id = p_user_id;
+    END;
+
+    IF v_milestone THEN
+        INSERT INTO public.notifications (user_id, type, title, content, link, metadata)
+        VALUES (p_user_id, 'system_reward', 'Recompensa Lendária!', 'Sequência de 7 dias! +25 créditos e Radar Boost.', '/wallet', jsonb_build_object('boost_granted', true));
+    END IF;
+
+    RETURN jsonb_build_object('success', true, 'credits_earned', v_credits, 'new_balance', v_new_balance,
+        'current_streak', v_streak, 'milestone_achieved', v_milestone);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Resgatar código de indicação
+CREATE OR REPLACE FUNCTION public.redeem_referral_code(p_referee_id UUID, p_referral_code VARCHAR(10))
+RETURNS JSONB AS $$
+DECLARE
+    v_referrer_id UUID;
+    v_exists BOOLEAN;
+BEGIN
+    SELECT user_id INTO v_referrer_id FROM public.user_balances WHERE referral_code = p_referral_code;
+    IF v_referrer_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Código inválido.');
+    END IF;
+    IF v_referrer_id = p_referee_id THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Não pode usar seu próprio código.');
+    END IF;
+    SELECT EXISTS(SELECT 1 FROM public.referrals WHERE referee_id = p_referee_id) INTO v_exists;
+    IF v_exists THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Já utilizou um código.');
+    END IF;
+    INSERT INTO public.referrals (referrer_id, referee_id, status) VALUES (v_referrer_id, p_referee_id, 'pending');
+    RETURN jsonb_build_object('success', true, 'message', 'Código aceito! Complete o cadastro para liberar créditos.');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Verificar e completar indicação (anti-fraude)
+CREATE OR REPLACE FUNCTION public.check_and_complete_referral()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_ref RECORD;
+    v_has_avatar BOOLEAN := FALSE;
+    v_has_messages BOOLEAN := FALSE;
+BEGIN
+    SELECT * INTO v_ref FROM public.referrals
+    WHERE referee_id = NEW.id AND status = 'pending' AND rewarded = FALSE;
+    IF v_ref.id IS NULL THEN RETURN NEW; END IF;
+
+    IF NEW.profile_image_url IS NOT NULL AND NEW.profile_image_url != '' THEN v_has_avatar := TRUE; END IF;
+    SELECT EXISTS(SELECT 1 FROM public.messages WHERE sender_id = NEW.id) INTO v_has_messages;
+
+    IF v_has_avatar AND v_has_messages AND NEW.profile_score >= 80 THEN
+        UPDATE public.referrals SET status = 'completed', rewarded = TRUE, updated_at = NOW() WHERE id = v_ref.id;
+        PERFORM public.execute_credit_transaction(v_ref.referrer_id, 50, 'referral_reward', jsonb_build_object('referee_id', NEW.id));
+        PERFORM public.execute_credit_transaction(NEW.id, 25, 'referral_reward', jsonb_build_object('referrer_id', v_ref.referrer_id));
+        INSERT INTO public.notifications (user_id, type, title, content, link, metadata)
+        VALUES (v_ref.referrer_id, 'system_reward', 'Créditos de Recomendação!', 'Convidado completou cadastro. +50 créditos!', '/wallet', jsonb_build_object('credits_earned', 50));
+        INSERT INTO public.notifications (user_id, type, title, content, link, metadata)
+        VALUES (NEW.id, 'system_reward', 'Bônus de Indicação!', 'Perfil verificado. +25 créditos!', '/wallet', jsonb_build_object('credits_earned', 25));
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Inicializar carteira com 10 créditos grátis
+CREATE OR REPLACE FUNCTION public.initialize_user_wallet()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.is_human = FALSE THEN RETURN NEW; END IF;
+    INSERT INTO public.user_balances (user_id, credits, referral_code)
+    VALUES (NEW.id, 10, public.generate_unique_referral_code())
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ========================
 -- FUNÇÕES DE NOTIFICAÇÃO
 -- ========================
 
@@ -778,10 +1066,23 @@ CREATE TRIGGER tr_gallery_approval_notification
 -- ========================
 -- REALTIME
 -- ========================
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.gallery_access_requests;
+DO $realtime$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime FOR TABLE
+      public.notifications,
+      public.messages,
+      public.matches,
+      public.gallery_access_requests;
+  ELSE
+    ALTER PUBLICATION supabase_realtime ADD TABLE
+      public.notifications,
+      public.messages,
+      public.matches,
+      public.gallery_access_requests;
+  END IF;
+END
+$realtime$;
 
 -- =========================================================
 -- 🤖 AI INFRASTRUCTURE & AUTOMATION

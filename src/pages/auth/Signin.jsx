@@ -48,7 +48,7 @@ export function Signin() {
       return;
     }
 
-    const { error: resetError } = await resetPassword(form.email, `${window.location.origin}/signin`);
+    const { error: resetError } = await resetPassword(form.email, `${window.location.origin}/reset-password`);
 
     if (resetError) {
       toast.error('ERRO NA RECUPERAÇÃO', {
