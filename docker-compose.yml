@@ -82,4 +82,4 @@ volumes:
 
 networks:
   desvio-net:
-    driver: bridge
+    driver: overlay
