@@ -1085,6 +1085,19 @@ END
 $realtime$;
 
 -- =========================================================
+-- 10b. REALTIME (TENANT)
+-- =========================================================
+INSERT INTO _realtime.tenants (id, name, external_id, jwt_secret, inserted_at, updated_at)
+VALUES (
+  gen_random_uuid(),
+  'realtime',
+  'realtime',
+  'b6f2e945c368ad93f2a9b5376149648e2f03b9d2',
+  now(),
+  now()
+) ON CONFLICT (external_id) DO NOTHING;
+
+-- =========================================================
 -- 🤖 AI INFRASTRUCTURE & AUTOMATION
 -- =========================================================
 

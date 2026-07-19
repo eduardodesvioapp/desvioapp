@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { GlassCard, PremiumButton, Badge, MatchedButton, LikedButton, Avatar, Loading, ReportModal, BackButton } from '@/components/ui';
 import { ActionNavBar, PageHeader, UserProfileDetail } from '@/components/patterns';
 import { validateImageFace, validateImageUrlFace } from '@/lib/faceDetection';
-import { uploadToR2 } from '@/services/r2';
+import { uploadToR2, toCdnUrl } from '@/services/r2';
 import { toast } from 'sonner';
 
 export function UserProfile() {
@@ -492,7 +492,7 @@ export function UserProfile() {
             <div className="absolute top-0 left-0 w-full h-[1px] bg-primary/50 shadow-[0_0_10px_rgba(186,158,255,0.5)] z-20 animate-scan"></div>
 
             <img
-              src={profile?.profile_image_url || 'https://i.pravatar.cc/800'}
+              src={toCdnUrl(profile?.profile_image_url) || 'https://i.pravatar.cc/800'}
               alt={profile?.name}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
             />
@@ -711,7 +711,7 @@ export function UserProfile() {
                   className="group relative aspect-square rounded overflow-hidden border border-white/5 bg-white/5 cursor-pointer"
                 >
                   <img
-                    src={photo.url}
+                    src={toCdnUrl(photo.url)}
                     className={`w-full h-full object-cover transition-all duration-700 ${!isOwnProfile ? 'grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105' : 'group-hover:scale-105'}`}
                     alt={`Fragment ${i}`}
                   />
@@ -864,7 +864,7 @@ export function UserProfile() {
                         className="group relative aspect-square rounded overflow-hidden border border-primary/20 bg-primary/5 cursor-pointer"
                       >
                         <img
-                          src={photo.url}
+                          src={toCdnUrl(photo.url)}
                           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
                           alt={`Private ${i}`}
                           onClick={() => setSelectedImage(photo)}
@@ -912,7 +912,7 @@ export function UserProfile() {
                       className="group relative aspect-square rounded overflow-hidden border border-primary/20 bg-primary/5 cursor-pointer"
                     >
                       <img
-                        src={photo.url}
+                        src={toCdnUrl(photo.url)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
                         alt={`Private ${i}`}
                       />
@@ -1002,7 +1002,7 @@ export function UserProfile() {
               <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-primary/40 z-10"></div>
 
               <img
-                src={selectedImage.url}
+                src={toCdnUrl(selectedImage.url)}
                 className="max-h-[80vh] w-auto object-contain transition-opacity duration-300"
                 alt="Enlarged dossier fragment"
               />

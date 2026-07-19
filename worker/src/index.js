@@ -4,6 +4,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 const ALLOWED_ORIGINS = [
   "https://desvio.app",
   "https://www.desvio.app",
+  "https://desvio.app.br",
+  "https://www.desvio.app.br",
   "http://localhost:5173",
   "http://localhost:3000"
 ];

@@ -1,5 +1,6 @@
 import React from 'react';
 import { GlassCard, Badge, MatchedButton, LikedButton } from '../ui';
+import { toCdnUrl } from '@/services/r2';
 
 /**
  * UserCard - The standard card for displaying user profiles in grids.
@@ -19,7 +20,7 @@ export const UserCard = ({
     >
       {/* Background Image */}
       <img 
-        src={profile.profile_image_url || 'https://i.pravatar.cc/600'} 
+        src={toCdnUrl(profile.profile_image_url) || 'https://i.pravatar.cc/600'} 
         alt={profile.name} 
         className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
       />

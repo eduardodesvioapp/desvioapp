@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { validateImageFace } from '@/lib/faceDetection';
 import { generateEmbedding } from '@/lib/embeddings';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { uploadToR2 } from '@/services/r2';
+import { uploadToR2, toCdnUrl } from '@/services/r2';
 import { toast } from 'sonner';
 
 const genderOptions = ['Mulher', 'Homem', 'Não-binário', 'Prefiro não dizer'];
@@ -384,7 +384,7 @@ export function ProfileEdit() {
                 <label className="relative block aspect-[3/4] w-full rounded-[2rem] border-2 border-dashed border-primary/20 bg-white/[0.02] hover:bg-white/[0.05] hover:border-primary/40 transition-all cursor-pointer overflow-hidden">
                   {form.avatarUrl ? (
                     <div className="relative w-full h-full">
-                      <img src={form.avatarUrl} alt="Avatar" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                      <img src={toCdnUrl(form.avatarUrl)} alt="Avatar" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
                         <div className="h-14 w-14 rounded bg-primary/20 backdrop-blur-xl flex items-center justify-center mb-4">
                           <span className="material-symbols-outlined text-primary text-3xl">add</span>

@@ -92,6 +92,35 @@ export function getGalleryUrl(key, width = 800) {
   return getImageUrl(key, { width, fit: "contain" });
 }
 
+export function toCdnUrl(url, options = {}) {
+  if (!url) return url;
+  if (url.includes('cdn-cgi/image')) return url;
+  if (!url.startsWith(R2_PUBLIC_URL)) return url;
+
+  const {
+    width,
+    height,
+    fit = "cover",
+    quality = 85,
+    format = "auto"
+  } = options;
+
+  const key = url.replace(`${R2_PUBLIC_URL}/`, '');
+
+  const params = [];
+  if (width) params.push(`width=${width}`);
+  if (height) params.push(`height=${height}`);
+  if (fit) params.push(`fit=${fit}`);
+  if (quality) params.push(`quality=${quality}`);
+  if (format) params.push(`format=${format}`);
+
+  if (params.length === 0) {
+    params.push('quality=85', 'format=auto');
+  }
+
+  return `https://${CF_ZONE}/cdn-cgi/image/${params.join(",")}/${R2_PUBLIC_URL}/${key}`;
+}
+
 export function deleteFromR2() {
   console.warn("Delete requires server-side implementation");
   return Promise.resolve();

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { validateImageFace, validateImageUrlFace } from '@/lib/faceDetection';
-import { uploadToR2 } from '@/services/r2';
+import { uploadToR2, toCdnUrl } from '@/services/r2';
 
 export function MediaManagement() {
   const navigate = useNavigate();
@@ -183,7 +183,7 @@ export function MediaManagement() {
 
           {publicPhotos.map(photo => (
             <div key={photo.id} className={`group relative aspect-[3/4] rounded md:rounded overflow-hidden border transition-all duration-500 ${photo.is_profile ? 'border-primary shadow-[0_20px_40px_rgba(186,158,255,0.1)]' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
-              <img src={photo.url} alt="Gallery" className={`w-full h-full object-cover transition-all duration-700 ${photo.is_profile ? 'grayscale-0' : 'grayscale-[40%] group-hover:grayscale-0 group-hover:scale-110'}`} />
+              <img src={toCdnUrl(photo.url)} alt="Gallery" className={`w-full h-full object-cover transition-all duration-700 ${photo.is_profile ? 'grayscale-0' : 'grayscale-[40%] group-hover:grayscale-0 group-hover:scale-110'}`} />
               
               {photo.is_profile && (
                 <div className="absolute top-4 left-4 bg-primary text-black px-4 py-1.5 rounded shadow-2xl">
@@ -234,7 +234,7 @@ export function MediaManagement() {
 
           {privatePhotos.map(photo => (
             <div key={photo.id} className="group relative aspect-[3/4] rounded md:rounded overflow-hidden border border-white/10 bg-white/5 hover:border-white/20 transition-all duration-500">
-              <img src={photo.url} alt="Private" className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
+              <img src={toCdnUrl(photo.url)} alt="Private" className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
               
               <div className="absolute top-4 left-4 bg-primary/80 p-1.5 rounded z-10 shadow-2xl">
                 <span className="material-symbols-outlined text-[10px] text-black font-black">lock</span>

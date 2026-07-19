@@ -1,4 +1,5 @@
 import React from 'react';
+import { toCdnUrl } from '@/services/r2';
 
 /**
  * Avatar - Standardized avatar component for the Desvio ecosystem.
@@ -36,13 +37,15 @@ export const Avatar = ({
 
   const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${alt || 'default'}`;
 
+  const resolvedSrc = (src && src.includes('desvio.app')) ? toCdnUrl(src) : (src || defaultAvatar);
+
   return (
     <div 
       className={`relative flex-shrink-0 overflow-hidden ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
       onClick={onClick}
     >
       <img 
-        src={src || defaultAvatar} 
+        src={resolvedSrc} 
         alt={alt} 
         className="absolute inset-0 block w-full h-full object-cover" 
       />
